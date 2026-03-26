@@ -119,6 +119,10 @@
     });
   }
 
+  function misc(ctx, W, H, images) {
+    if (images.misc) { ctx.drawImage(images.misc, 0, 0, W, H); }
+  }
+
   function tapePath(ctx, theme, leftR, rightR) {
     var lgx = theme.leftGuideX;
     var lgy = theme.leftGuideY;
@@ -163,6 +167,7 @@
     precompositeArt:  precompositeArt,
     drawComposited:   drawComposited,
     textFields:       textFields,
+    misc:             misc,
   };
 
 })();

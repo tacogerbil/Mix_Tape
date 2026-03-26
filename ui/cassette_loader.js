@@ -109,6 +109,7 @@
           hub:        base + 'hub.png',
           tapetexture: base + 'tape_texture.png',
           labelmask:  base + 'label_mask.png',
+          misc:       base + 'misc.png',
         }, function (images) {
           loadGoogleFont(theme.fontFamily, staticBase, function () {
             callback(theme, images);
