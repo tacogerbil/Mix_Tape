@@ -8,10 +8,10 @@
   "maxSpoolRadius": 215,
   "fontFamily": "Permanent Marker",
   "labelOpacity": 0.75,
-  "leftGuideX": 37,
-  "leftGuideY": 432,
-  "rightGuideX": 759,
-  "rightGuideY": 435,
+  "leftGuideX": null,
+  "leftGuideY": null,
+  "rightGuideX": null,
+  "rightGuideY": null,
   "textFields": [
     {
       "x": 0.5022,
