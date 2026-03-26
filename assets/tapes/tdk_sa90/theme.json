@@ -1,0 +1,17 @@
+{
+  "name": "TDK SA-90",
+
+  "leftSpoolX":     205,
+  "leftSpoolY":     200,
+  "rightSpoolX":    595,
+  "rightSpoolY":    200,
+  "minSpoolRadius": 30,
+  "maxSpoolRadius": 88,
+
+  "fontFamily": "Permanent Marker",
+
+  "textFields": [
+    { "x": 0.50, "y": 0.58, "size": 0.07,  "rotate": -0.03, "colour": "#ffffff" },
+    { "x": 0.50, "y": 0.70, "size": 0.042, "rotate": -0.03, "colour": "#e8d5a0" }
+  ]
+}

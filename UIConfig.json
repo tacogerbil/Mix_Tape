@@ -1,0 +1,72 @@
+{
+  "page": {
+    "label": "Cassette Now Playing Settings"
+  },
+  "sections": [
+    {
+      "content": [
+        {
+          "id": "enabled",
+          "element": "switch",
+          "label": "Enable Cassette Animation",
+          "value": true
+        },
+        {
+          "id": "animationSpeed",
+          "element": "input",
+          "type": "number",
+          "label": "Animation Speed (0.5–2.0)",
+          "attributes": [
+            { "placeholder": "1.0" },
+            { "min": "0.5" },
+            { "max": "2.0" },
+            { "step": "0.1" }
+          ],
+          "value": 1.0
+        },
+        {
+          "id": "labelOpacity",
+          "element": "input",
+          "type": "number",
+          "label": "Label / Album Art Opacity (0.0–1.0)",
+          "attributes": [
+            { "placeholder": "0.75" },
+            { "min": "0" },
+            { "max": "1" },
+            { "step": "0.05" }
+          ],
+          "value": 0.75
+        }
+      ]
+    },
+    {
+      "label": "Theme Management",
+      "description": "Upload new cassette themes (ZIP files) from any browser on your network: http://volumio.local:3042/upload",
+      "content": []
+    },
+    {
+      "label": "Tape Selection",
+      "content": [
+        {
+          "id": "activeTape",
+          "element": "select",
+          "label": "Active Tape",
+          "value": "sony_bhf",
+          "options": []
+        },
+        {
+          "id": "randomizeTape",
+          "element": "switch",
+          "label": "Randomize tape on each track change",
+          "value": false
+        },
+        {
+          "id": "tapePool",
+          "element": "checkboxGroup",
+          "label": "Tapes available for random selection",
+          "value": []
+        }
+      ]
+    }
+  ]
+}

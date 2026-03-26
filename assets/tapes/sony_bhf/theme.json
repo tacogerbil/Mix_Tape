@@ -1,0 +1,47 @@
+{
+  "name": "sony_bhf",
+  "leftSpoolX": 228,
+  "leftSpoolY": 230,
+  "rightSpoolX": 574,
+  "rightSpoolY": 230,
+  "minSpoolRadius": 28,
+  "maxSpoolRadius": 215,
+  "fontFamily": "Permanent Marker",
+  "labelOpacity": 0.75,
+  "leftGuideX": 37,
+  "leftGuideY": 432,
+  "rightGuideX": 759,
+  "rightGuideY": 435,
+  "textFields": [
+    {
+      "x": 0.5022,
+      "y": 0.0852,
+      "size": 0.08,
+      "width": 0.82,
+      "rotate": 0.0175,
+      "colour": "#000000",
+      "binding": "title",
+      "shadow": true
+    },
+    {
+      "x": 0.4978,
+      "y": 0.1556,
+      "size": 0.05,
+      "width": 0.6,
+      "rotate": 0.0175,
+      "colour": "#000000",
+      "binding": "artist",
+      "shadow": true
+    },
+    {
+      "x": 0.5167,
+      "y": 0.2185,
+      "size": 0.05,
+      "width": 0.78,
+      "rotate": 0.0175,
+      "colour": "#000000",
+      "binding": "album",
+      "shadow": true
+    }
+  ]
+}

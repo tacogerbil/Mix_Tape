@@ -1,0 +1,31 @@
+{
+  "name": "mix_tape",
+  "version": "1.0.0",
+  "description": "Mix Tape — animated cassette tape Now Playing screen for Volumio",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tacogerbil/Mix_Tape.git"
+  },
+  "volumio_info": {
+    "prettyName": "Mix Tape",
+    "plugin_type": "user_interface",
+    "os": ["buster", "bullseye"],
+    "icon": "mix_tape",
+    "boot_priority": 1,
+    "details": "Replaces the Volumio kiosk display with an animated HTML5 canvas cassette tape that reacts to playback in real time. Album art, title and artist are stamped onto the tape label. Spools advance as the track progresses. Supports multiple user-installable tape themes.",
+    "changelog": "1.0.0 — Initial release.",
+    "architectures": ["amd64", "armhf", "i386"]
+  },
+  "engines": {
+    "node": ">=14",
+    "volumio": ">=3"
+  },
+  "author": "tacogerbil",
+  "license": "MIT",
+  "keywords": ["volumio", "plugin", "cassette", "now-playing", "animation", "kiosk"],
+  "dependencies": {
+    "kew": "^0.7.0",
+    "v-conf": "^1.4.0"
+  }
+}
