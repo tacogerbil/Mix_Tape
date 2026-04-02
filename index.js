@@ -242,6 +242,7 @@ MixTape.prototype._buildConfig = function () {
     activeTape:     activeTape,
     randomizeTape:  this.config.get('randomizeTape') || false,
     tapePool:       allTapes.filter(t => { const v = this.config.get('pool_' + t.id); return v === true || v === 'true'; }).map(t => t.id),
+    availableTapes: allTapes,
     staticBase:     'http://' + require('os').hostname() + '.local:' + STATIC_PORT,
   };
 };

@@ -391,6 +391,9 @@
       var wasRandom = RANDOMIZE;
       RANDOMIZE = fresh.randomizeTape  || false;
       TAPE_POOL = Array.isArray(fresh.tapePool) && fresh.tapePool.length ? fresh.tapePool : null;
+      if (Array.isArray(fresh.availableTapes)) {
+        availableTapes = fresh.availableTapes;
+      }
 
       // User just enabled randomize — switch immediately so they see it take effect.
       if (!wasRandom && RANDOMIZE) {
