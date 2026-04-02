@@ -2,8 +2,8 @@
   "enabled":         { "type": "boolean", "value": true },
   "animationSpeed":  { "type": "number",  "value": 1.0 },
   "labelOpacity":    { "type": "number",  "value": 0.75 },
+  "fontFamily":      { "type": "string",  "value": "" },
   "activeTape":      { "type": "string",  "value": "" },
   "randomizeTape":   { "type": "boolean", "value": false },
-  "tapePool":        { "type": "array",   "value": [] }
+  "tapePool":        { "type": "string",  "value": "" }
 }
-

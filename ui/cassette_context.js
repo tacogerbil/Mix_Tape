@@ -72,11 +72,16 @@
     set(STATES.NONE, '', '', '');
   }
 
+  var _persistTimer = null;
+
   function persist() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', STATIC_BASE + '/context', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(JSON.stringify(current));
+    clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(function () {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', STATIC_BASE + '/context', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify(current));
+    }, 300);
   }
 
   function restore(callback) {

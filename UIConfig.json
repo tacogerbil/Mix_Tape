@@ -4,6 +4,23 @@
   },
   "sections": [
     {
+      "id": "section_display",
+      "element": "section",
+      "label": "Display",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "user_interface/mix_tape",
+        "method": "saveOptions"
+      },
+      "saveButton": {
+        "label": "SAVE",
+        "data": [
+          "enabled",
+          "animationSpeed",
+          "labelOpacity",
+          "fontFamily"
+        ]
+      },
       "content": [
         {
           "id": "enabled",
@@ -36,22 +53,55 @@
             { "step": "0.05" }
           ],
           "value": 0.75
+        },
+        {
+          "id": "fontFamily",
+          "element": "select",
+          "label": "Text Font (overrides each tape's own font)",
+          "value": "",
+          "options": [
+            { "value": "",                 "label": "Per Tape (use each tape's own font)" },
+            { "value": "Permanent Marker", "label": "Permanent Marker  (bundled — no internet)" },
+            { "value": "Rock Salt",        "label": "Rock Salt" },
+            { "value": "Caveat",           "label": "Caveat" },
+            { "value": "Satisfy",          "label": "Satisfy" },
+            { "value": "Dancing Script",   "label": "Dancing Script" },
+            { "value": "Special Elite",    "label": "Special Elite" },
+            { "value": "Pacifico",         "label": "Pacifico" },
+            { "value": "Indie Flower",     "label": "Indie Flower" }
+          ]
         }
       ]
     },
     {
+      "id": "section_theme",
+      "element": "section",
       "label": "Theme Management",
       "description": "Upload new cassette themes (ZIP files) from any browser on your network: http://volumio.local:3042/upload",
       "content": []
     },
     {
+      "id": "section_tape",
+      "element": "section",
       "label": "Tape Selection",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "user_interface/mix_tape",
+        "method": "saveOptions"
+      },
+      "saveButton": {
+        "label": "SAVE",
+        "data": [
+          "activeTape",
+          "randomizeTape"
+        ]
+      },
       "content": [
         {
           "id": "activeTape",
           "element": "select",
           "label": "Active Tape",
-          "value": "sony_bhf",
+          "value": "",
           "options": []
         },
         {
@@ -59,12 +109,6 @@
           "element": "switch",
           "label": "Randomize tape on each track change",
           "value": false
-        },
-        {
-          "id": "tapePool",
-          "element": "checkboxGroup",
-          "label": "Tapes available for random selection",
-          "value": []
         }
       ]
     }

@@ -26,11 +26,6 @@
       return (BASE_TAPE_SPEED / Math.max(spoolRadius, 1)) * dtMs * animSpeed;
     },
 
-    truncateText: function (text, maxChars) {
-      if (!text) return '';
-      return text.length > maxChars ? text.substring(0, maxChars - 1) + '\u2026' : text;
-    },
-
   };
 
 })();

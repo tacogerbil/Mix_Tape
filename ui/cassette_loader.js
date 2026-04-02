@@ -17,6 +17,10 @@
     ],
   };
 
+  // -------------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------------
+
   function fetchJson(url, onSuccess, onFail) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
@@ -40,7 +44,7 @@
       img.onload = img.onerror = function () {
         result[key] = img.naturalWidth > 0 ? img : null;
         if (--pending === 0) {
-          result.labelmask = buildAlphaMask(result.labelmask);
+          try { result.labelmask = buildAlphaMask(result.labelmask); } catch (_) { result.labelmask = null; }
           callback(result);
         }
       };
@@ -66,21 +70,43 @@
     return c;
   }
 
+  /**
+   * Register a font so the canvas can render it.
+   *
+   * - "Permanent Marker" is bundled as a woff2 on the static server — no
+   *   network request is made, so it works offline.
+   * - All other font names are fetched from the Google Fonts CDN.  The Pi
+   *   must have internet access for those to render; the canvas falls back
+   *   to the browser's default serif if the request fails.
+   *
+   * The function is idempotent: calling it twice for the same font is a no-op.
+   *
+   * @param {string}   fontName    Exact Google Fonts family name, e.g. "Rock Salt"
+   * @param {string}   staticBase  Base URL of the Mix Tape static server
+   * @param {function} callback    Called once the font stylesheet is injected
+   *                               (or immediately on cache hit / fallback)
+   */
   function loadGoogleFont(fontName, staticBase, callback) {
     var safeId = fontName.replace(/\s+/g, '-');
     var faceId = 'cassette-face-' + safeId;
     var linkId = 'cassette-font-' + safeId;
 
-    if (!document.getElementById(faceId)) {
-      var style = document.createElement('style');
-      style.id  = faceId;
-      style.textContent =
-        '@font-face{font-family:"' + fontName + '";' +
-        'src:url("' + staticBase + '/assets/fonts/PermanentMarker-Regular.woff2") format("woff2");' +
-        'font-display:swap;}';
-      document.head.appendChild(style);
+    // Permanent Marker is bundled — serve it locally, no CDN needed.
+    if (fontName === 'Permanent Marker') {
+      if (!document.getElementById(faceId)) {
+        var style = document.createElement('style');
+        style.id  = faceId;
+        style.textContent =
+          '@font-face{font-family:"Permanent Marker";' +
+          'src:url("' + staticBase + '/assets/fonts/PermanentMarker-Regular.woff2") format("woff2");' +
+          'font-display:swap;}';
+        document.head.appendChild(style);
+      }
+      callback();
+      return;
     }
 
+    // For any other font: load from Google Fonts CDN.
     if (document.getElementById(linkId)) { callback(); return; }
 
     var link    = document.createElement('link');
@@ -91,6 +117,10 @@
     link.onload = link.onerror = callback;
     document.head.appendChild(link);
   }
+
+  // -------------------------------------------------------------------------
+  // Public API
+  // -------------------------------------------------------------------------
 
   function fetchTapeList(staticBase, callback) {
     fetchJson(staticBase + '/tapes', callback, function () { callback([]); });
@@ -104,12 +134,12 @@
       function (raw) {
         var theme = Object.assign({}, THEME_DEFAULTS, raw);
         loadImages({
-          bg:         base + 'bg.jpg',
-          shell:      base + 'shell.png',
-          hub:        base + 'hub.png',
+          bg:          base + 'bg.jpg',
+          shell:       base + 'shell.png',
+          hub:         base + 'hub.png',
           tapetexture: base + 'tape_texture.png',
-          labelmask:  base + 'label_mask.png',
-          misc:       base + 'misc.png',
+          labelmask:   base + 'label_mask.png',
+          misc:        base + 'misc.png',
         }, function (images) {
           loadGoogleFont(theme.fontFamily, staticBase, function () {
             callback(theme, images);
@@ -117,7 +147,7 @@
         });
       },
       function () {
-        callback(THEME_DEFAULTS, {});
+        callback(Object.assign({}, THEME_DEFAULTS), {});
       }
     );
   }
@@ -141,6 +171,7 @@
     fetchTapeList: fetchTapeList,
     loadTape:      loadTape,
     loadAlbumArt:  loadAlbumArt,
+    loadFont:      loadGoogleFont,   // exposed for global font override
   };
 
 })();

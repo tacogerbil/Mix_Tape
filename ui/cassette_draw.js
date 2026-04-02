@@ -123,37 +123,86 @@
     if (images.misc) { ctx.drawImage(images.misc, 0, 0, W, H); }
   }
 
+  /**
+   * Returns the angle (in canvas radians) of the tangent point on a circle
+   * (cx,cy,r) that is closest to the external point (px,py), choosing the
+   * tangent on the given side ('left' = outer-left for left spool,
+   * 'right' = outer-right for right spool).
+   *
+   * The two tangent angles are:  baseAng ± acos(r/d)
+   * We pick the one whose canvas-y component is larger (lower on screen) so
+   * the arc wraps around the bottom of the spool.
+   */
+  /**
+   * Both tangent angles from external point (px,py) to circle (cx,cy,r).
+   * Returns { outer, inner } where:
+   *   outer = base + offset  (higher angle value)
+   *   inner = base - offset  (lower angle value)
+   */
+  function _bothTangents(cx, cy, r, px, py) {
+    var dx      = px - cx;
+    var dy      = py - cy;
+    var d       = Math.sqrt(dx * dx + dy * dy);
+    if (d <= r) { var a = Math.atan2(dy, dx); return { outer: a, inner: a }; }
+    var baseAng = Math.atan2(dy, dx);
+    var offset  = Math.acos(r / d);
+    return { outer: baseAng + offset, inner: baseAng - offset };
+  }
+
   function tapePath(ctx, theme, leftR, rightR) {
     var lgx = theme.leftGuideX;
     var lgy = theme.leftGuideY;
     if (lgx == null || lgy == null) return;
 
-    // Tangent point on left spool aimed at left guide roller
-    var lx     = theme.leftSpoolX;
-    var ly     = theme.leftSpoolY;
-    var ang1   = Math.atan2(lgy - ly, lgx - lx);
-    var startX = lx + leftR * Math.cos(ang1);
-    var startY = ly + leftR * Math.sin(ang1);
-
-    ctx.save();
-    ctx.strokeStyle = 'rgba(160,110,40,0.82)';
-    ctx.lineWidth   = 2;
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(lgx, lgy);
+    var lx  = theme.leftSpoolX;
+    var ly  = theme.leftSpoolY;
+    var rx  = theme.rightSpoolX;
+    var ry  = theme.rightSpoolY;
 
     var rgx = theme.rightGuideX;
     var rgy = theme.rightGuideY;
-    if (rgx != null && rgy != null) {
-      ctx.lineTo(rgx, rgy);
-      // Tangent point on right spool from right guide roller
-      var rx   = theme.rightSpoolX;
-      var ry   = theme.rightSpoolY;
-      var ang2 = Math.atan2(rgy - ry, rgx - rx);
-      ctx.lineTo(rx + rightR * Math.cos(ang2), ry + rightR * Math.sin(ang2));
-    }
+    if (rgx == null || rgy == null) return;
+
+    // Both tangent angles from each guide pin to its spool.
+    // Left spool:  la.outer > π (outer/left side), la.inner < π (inner/right side)
+    // Right spool: ra.outer > 0 (inner/left side), ra.inner < 0 (outer/right side)
+    var la = _bothTangents(lx, ly, leftR,  lgx, lgy);
+    var ra = _bothTangents(rx, ry, rightR, rgx, rgy);
+
+    var cos = Math.cos, sin = Math.sin;
+
+    ctx.save();
+    ctx.strokeStyle = '#5c2800';
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.beginPath();
+
+    // Start at left guide pin.
+    ctx.moveTo(lgx, lgy);
+
+    // Line to outer tangent point on left spool (the point on the outer/left side).
+    ctx.lineTo(lx + leftR * cos(la.outer), ly + leftR * sin(la.outer));
+
+    // Arc over the left apex (9 o'clock = π): from la.outer counterclockwise to la.inner.
+    // anticlockwise=true in canvas = decreasing angle, which sweeps OVER the outer-left side.
+    ctx.arc(lx, ly, leftR, la.outer, la.inner, true);
+
+    // Line from inner tangent point on left spool to capstans and right guide.
+    var lcx = theme.leftCapstanX,  lcy = theme.leftCapstanY;
+    var rcx = theme.rightCapstanX, rcy = theme.rightCapstanY;
+    if (lcx != null && lcy != null) ctx.lineTo(lcx, lcy);
+    if (rcx != null && rcy != null) ctx.lineTo(rcx, rcy);
+
+    // Line to inner tangent point on right spool (the point on the inner/left side).
+    ctx.lineTo(rx + rightR * cos(ra.outer), ry + rightR * sin(ra.outer));
+
+    // Arc over the right apex (3 o'clock = 0): from ra.outer counterclockwise to ra.inner.
+    // anticlockwise=true sweeps OVER the outer-right side.
+    ctx.arc(rx, ry, rightR, ra.outer, ra.inner, true);
+
+    // Line from outer tangent point on right spool back to right guide pin.
+    ctx.lineTo(rgx, rgy);
 
     ctx.stroke();
     ctx.restore();
