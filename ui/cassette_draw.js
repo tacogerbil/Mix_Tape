@@ -181,11 +181,13 @@
     // Start at left guide pin.
     ctx.moveTo(lgx, lgy);
 
-    // 1. Line to outer tangent point on left spool and arc over apex.
-    ctx.arc(lx, ly, leftR, la.outer, la.inner, true);
+    // 1. Line to outer tangent point on left spool and arc to top apex (12 o'clock).
+    // anticlockwise=false correctly sweeps the left outer edge up to the top.
+    ctx.arc(lx, ly, leftR, la.outer, -Math.PI / 2, false);
 
-    // 2. Straight line bridge to right spool inner tangent, arc over apex.
-    ctx.arc(rx, ry, rightR, ra.outer, ra.inner, true);
+    // 2. Straight line bridge to right spool top apex, arc to outer tangent.
+    // anticlockwise=false sweeps from the top down the right outer edge.
+    ctx.arc(rx, ry, rightR, -Math.PI / 2, ra.inner, false);
 
     // 3. Line down to right guide pin.
     ctx.lineTo(rgx, rgy);
