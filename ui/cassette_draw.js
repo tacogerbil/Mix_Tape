@@ -181,28 +181,23 @@
     // Start at left guide pin.
     ctx.moveTo(lgx, lgy);
 
-    // Line to outer tangent point on left spool (the point on the outer/left side).
-    ctx.lineTo(lx + leftR * cos(la.outer), ly + leftR * sin(la.outer));
-
-    // Arc over the left apex (9 o'clock = π): from la.outer counterclockwise to la.inner.
-    // anticlockwise=true in canvas = decreasing angle, which sweeps OVER the outer-left side.
+    // 1. Line to outer tangent point on left spool and arc over apex.
     ctx.arc(lx, ly, leftR, la.outer, la.inner, true);
 
-    // Line from inner tangent point on left spool to capstans and right guide.
-    var lcx = theme.leftCapstanX,  lcy = theme.leftCapstanY;
-    var rcx = theme.rightCapstanX, rcy = theme.rightCapstanY;
-    if (lcx != null && lcy != null) ctx.lineTo(lcx, lcy);
-    if (rcx != null && rcy != null) ctx.lineTo(rcx, rcy);
-
-    // Line to inner tangent point on right spool (the point on the inner/left side).
-    ctx.lineTo(rx + rightR * cos(ra.outer), ry + rightR * sin(ra.outer));
-
-    // Arc over the right apex (3 o'clock = 0): from ra.outer counterclockwise to ra.inner.
-    // anticlockwise=true sweeps OVER the outer-right side.
+    // 2. Straight line bridge to right spool inner tangent, arc over apex.
     ctx.arc(rx, ry, rightR, ra.outer, ra.inner, true);
 
-    // Line from outer tangent point on right spool back to right guide pin.
+    // 3. Line down to right guide pin.
     ctx.lineTo(rgx, rgy);
+
+    // 4. Trace backwards across bottom capstans to complete polygon.
+    var lcx = theme.leftCapstanX,  lcy = theme.leftCapstanY;
+    var rcx = theme.rightCapstanX, rcy = theme.rightCapstanY;
+    if (rcx != null && rcy != null) ctx.lineTo(rcx, rcy);
+    if (lcx != null && lcy != null) ctx.lineTo(lcx, lcy);
+
+    // 5. Close loop back to left guide pin.
+    ctx.lineTo(lgx, lgy);
 
     ctx.stroke();
     ctx.restore();
