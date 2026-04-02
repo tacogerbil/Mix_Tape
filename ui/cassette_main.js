@@ -45,11 +45,6 @@
   var _socket        = null;
   var _scrubber      = null;
 
-  function dbg(msg) {
-    var el = document.getElementById('dbg');
-    if (el) el.textContent = msg;
-  }
-
   // -------------------------------------------------------------------------
   // Font override
   // -------------------------------------------------------------------------
@@ -86,13 +81,11 @@
     var candidates = pool.filter(function (t) { return t.id !== tape.id; });
     if (!candidates.length) candidates = pool;
     if (!candidates.length) {
-      dbg('No candidates! pool=' + JSON.stringify(TAPE_POOL) + ' avail=' + availableTapes.length);
       console.log('[MixTape] switchToRandomTape: no candidates (pool:', JSON.stringify(TAPE_POOL), ', available:', availableTapes.length, ')');
       return;
     }
 
     var next    = candidates[Math.floor(Math.random() * candidates.length)];
-    dbg('Switching: ' + tape.id + ' -> ' + next.id);
     console.log('[MixTape] switchToRandomTape:', tape.id, '->', next.id);
     var prevArt = state.albumart;
     loader.loadTape(next.id, STATIC_BASE, function (theme, images) {
@@ -330,7 +323,6 @@
     }
 
     if (state.title !== prevTitle) {
-      dbg('Track: "' + state.title + '" | RANDOMIZE=' + RANDOMIZE + ' tape=' + tape.id + ' tapes=' + availableTapes.length);
       console.log('[MixTape] title change: "' + prevTitle + '" -> "' + state.title + '" RANDOMIZE=' + RANDOMIZE + ' tapes=' + availableTapes.length);
       if (prevTitle !== null && RANDOMIZE) {
         switchToRandomTape();
@@ -348,18 +340,12 @@
 
   function connectSocket() {
     if (typeof io === 'undefined') {
-      dbg('Waiting for socket.io...');
       setTimeout(connectSocket, 500);
       return;
     }
 
     var volumioUrl = 'http://' + window.location.hostname + ':3000';
-    dbg('Connecting to ' + volumioUrl + '...');
     _socket = io(volumioUrl);
-
-    _socket.on('connect',    function () { dbg('Socket connected | RANDOMIZE=' + RANDOMIZE + ' tapes=' + availableTapes.length); });
-    _socket.on('disconnect', function () { dbg('Socket DISCONNECTED'); });
-    _socket.on('error',      function (e) { dbg('Socket error: ' + e); });
 
     var controls = initControls();
     _socket.emit('getState', '');
@@ -422,17 +408,13 @@
   }
 
   function bootstrap() {
-    dbg('Bootstrap: canvas init...');
     initCanvas();
     _scrubber = initScrubber();
     loader.fetchTapeList(STATIC_BASE, function (tapes) {
       availableTapes = tapes;
-      dbg('Tapes loaded: ' + tapes.length + ' | Loading tape: ' + tape.id);
       loader.loadTape(tape.id, STATIC_BASE, function (theme, images) {
         _afterTapeLoaded(theme, images);
-        dbg('Tape ready: ' + tape.id + ' | Restoring context...');
         context.restore(function () {
-          dbg('Context restored | Connecting socket...');
           connectSocket();
           showVolumioOverlay();
         });
