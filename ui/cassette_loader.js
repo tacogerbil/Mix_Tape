@@ -17,10 +17,6 @@
     ],
   };
 
-  // -------------------------------------------------------------------------
-  // Internal helpers
-  // -------------------------------------------------------------------------
-
   function fetchJson(url, onSuccess, onFail) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
@@ -71,56 +67,50 @@
   }
 
   /**
-   * Register a font so the canvas can render it.
-   *
-   * - "Permanent Marker" is bundled as a woff2 on the static server — no
-   *   network request is made, so it works offline.
-   * - All other font names are fetched from the Google Fonts CDN.  The Pi
-   *   must have internet access for those to render; the canvas falls back
-   *   to the browser's default serif if the request fails.
-   *
-   * The function is idempotent: calling it twice for the same font is a no-op.
-   *
-   * @param {string}   fontName    Exact Google Fonts family name, e.g. "Rock Salt"
-   * @param {string}   staticBase  Base URL of the Mix Tape static server
-   * @param {function} callback    Called once the font stylesheet is injected
-   *                               (or immediately on cache hit / fallback)
+   * "Permanent Marker" is bundled as a woff2 on the static server — no
+   * network request needed, works fully offline.
    */
-  function loadGoogleFont(fontName, staticBase, callback) {
-    var safeId = fontName.replace(/\s+/g, '-');
-    var faceId = 'cassette-face-' + safeId;
-    var linkId = 'cassette-font-' + safeId;
-
-    // Permanent Marker is bundled — serve it locally, no CDN needed.
-    if (fontName === 'Permanent Marker') {
-      if (!document.getElementById(faceId)) {
-        var style = document.createElement('style');
-        style.id  = faceId;
-        style.textContent =
-          '@font-face{font-family:"Permanent Marker";' +
-          'src:url("' + staticBase + '/assets/fonts/PermanentMarker-Regular.woff2") format("woff2");' +
-          'font-display:swap;}';
-        document.head.appendChild(style);
-      }
-      callback();
-      return;
+  function _loadBundledFont(name, staticBase, cb) {
+    var faceId = 'cassette-face-' + name.replace(/\s+/g, '-');
+    if (!document.getElementById(faceId)) {
+      var style = document.createElement('style');
+      style.id  = faceId;
+      style.textContent =
+        '@font-face{font-family:"' + name + '";' +
+        'src:url("' + staticBase + '/assets/fonts/PermanentMarker-Regular.woff2") format("woff2");' +
+        'font-display:swap;}';
+      document.head.appendChild(style);
     }
+    cb();
+  }
 
-    // For any other font: load from Google Fonts CDN.
-    if (document.getElementById(linkId)) { callback(); return; }
-
+  function _loadCdnFont(name, cb) {
+    var linkId = 'cassette-font-' + name.replace(/\s+/g, '-');
+    if (document.getElementById(linkId)) { cb(); return; }
     var link    = document.createElement('link');
     link.id     = linkId;
     link.rel    = 'stylesheet';
     link.href   = 'https://fonts.googleapis.com/css2?family=' +
-                  encodeURIComponent(fontName).replace(/%20/g, '+') + ':wght@400&display=swap';
-    link.onload = link.onerror = callback;
+                  encodeURIComponent(name).replace(/%20/g, '+') + ':wght@400&display=swap';
+    link.onload = link.onerror = cb;
     document.head.appendChild(link);
   }
 
-  // -------------------------------------------------------------------------
-  // Public API
-  // -------------------------------------------------------------------------
+  /**
+   * Register a font so the canvas can render it.
+   * Idempotent: calling twice for the same font is a no-op.
+   *
+   * @param {string}   fontName    Exact Google Fonts family name, e.g. "Rock Salt"
+   * @param {string}   staticBase  Base URL of the Mix Tape static server
+   * @param {function} callback    Called once the font stylesheet is injected
+   */
+  function loadFont(fontName, staticBase, callback) {
+    if (fontName === 'Permanent Marker') {
+      _loadBundledFont(fontName, staticBase, callback);
+    } else {
+      _loadCdnFont(fontName, callback);
+    }
+  }
 
   function fetchTapeList(staticBase, callback) {
     fetchJson(staticBase + '/tapes', callback, function () { callback([]); });
@@ -141,7 +131,7 @@
           labelmask:   base + 'label_mask.png',
           misc:        base + 'misc.png',
         }, function (images) {
-          loadGoogleFont(theme.fontFamily, staticBase, function () {
+          loadFont(theme.fontFamily, staticBase, function () {
             callback(theme, images);
           });
         });
@@ -171,7 +161,7 @@
     fetchTapeList: fetchTapeList,
     loadTape:      loadTape,
     loadAlbumArt:  loadAlbumArt,
-    loadFont:      loadGoogleFont,   // exposed for global font override
+    loadFont:      loadFont,
   };
 
 })();

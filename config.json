@@ -4,6 +4,7 @@
   "labelOpacity":    { "type": "number",  "value": 0.75 },
   "fontFamily":      { "type": "string",  "value": "" },
   "activeTape":      { "type": "string",  "value": "" },
-  "randomizeTape":   { "type": "boolean", "value": false },
-  "tapePool":        { "type": "string",  "value": "" }
+  "randomizeTape":    { "type": "boolean", "value": false },
+  "keepScreenAwake":  { "type": "boolean", "value": true },
+  "tapePool":         { "type": "string",  "value": "" }
 }

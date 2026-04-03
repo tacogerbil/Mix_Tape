@@ -3,8 +3,6 @@
 
   window.__cassette = window.__cassette || {};
 
-  var math = window.__cassette.math;
-
   function background(ctx, W, H, images) {
     if (images.bg) { ctx.drawImage(images.bg, 0, 0, W, H); return; }
     ctx.fillStyle = '#1a0e00';

@@ -12,6 +12,28 @@
 
   var ALBUM_MATCH_THRESHOLD = 0.90;
 
+  var _api = {
+    save: function (staticBase, payload, cb) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', staticBase + '/context', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      if (cb) xhr.onload = xhr.onerror = cb;
+      xhr.send(JSON.stringify(payload));
+    },
+    load: function (staticBase, cb) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', staticBase + '/context', true);
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          try { cb(JSON.parse(xhr.responseText)); return; } catch (_) {}
+        }
+        cb(null);
+      };
+      xhr.onerror = function () { cb(null); };
+      xhr.send();
+    },
+  };
+
   function buildLine2(artist, album) {
     var parts = [];
     if (artist) parts.push(artist);
@@ -75,29 +97,18 @@
   var _persistTimer = null;
 
   function persist() {
+    // Debounce to avoid hammering the server on rapid state updates.
     clearTimeout(_persistTimer);
     _persistTimer = setTimeout(function () {
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', STATIC_BASE + '/context', true);
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.send(JSON.stringify(current));
+      _api.save(STATIC_BASE, current, null);
     }, 300);
   }
 
   function restore(callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', STATIC_BASE + '/context', true);
-    xhr.onload = function () {
-      if (xhr.status === 200) {
-        try {
-          var saved = JSON.parse(xhr.responseText);
-          if (saved && saved.type) current = saved;
-        } catch (_) {}
-      }
+    _api.load(STATIC_BASE, function (saved) {
+      if (saved && saved.type) current = saved;
       if (callback) callback(current);
-    };
-    xhr.onerror = function () { if (callback) callback(current); };
-    xhr.send();
+    });
   }
 
   function getCurrent() { return current; }

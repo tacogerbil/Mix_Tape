@@ -14,7 +14,10 @@ const TAPES_DIR    = path.join(__dirname, 'assets', 'tapes');
 const KIOSK_SCRIPT = '/opt/volumiokiosk.sh';
 const KIOSK_BACKUP = '/home/volumio/.mix_tape/volumiokiosk.sh.bak';
 
-// Sudo helper — avoids shell string concatenation throughout
+// Captured once — avoids repeated syscall inside hot config path.
+const HOSTNAME = require('os').hostname();
+
+// Avoids shell string concatenation throughout sudo calls.
 function sudoExec(args) {
   execFileSync('sudo', ['-S'].concat(args), { input: 'volumio\n' });
 }
@@ -43,6 +46,17 @@ MixTape.prototype.onVolumioStart = function () {
 MixTape.prototype.onStart = function () {
   const defer = libQ.defer();
   try {
+    /**
+     * @param {string}   pluginDir       Absolute path to plugin root
+     * @param {number}   port            HTTP port to bind (3042)
+     * @param {string}   tapesDir        Absolute path to assets/tapes/
+     * @param {Function} getTapeList     () => TapeDescriptor[]
+     * @param {Function} getContext      () => ContextObject
+     * @param {Function} setContext      (ctx: ContextObject) => void
+     * @param {Function} getConfig       () => ConfigObject
+     * @param {Function} onTapeUploaded  (tapeId: string) => void
+     * @param {Object}   logger          Volumio logger instance
+     */
     this._server = new StaticServer(
       __dirname, STATIC_PORT,
       TAPES_DIR,
@@ -121,10 +135,11 @@ MixTape.prototype.getUIConfig = function () {
 /** Restore saved values for all simple (non-dynamic) fields from config.json. */
 MixTape.prototype._populateSimpleFields = function (uiconf) {
   const map = {
-    enabled:        this.config.get('enabled'),
-    animationSpeed: this.config.get('animationSpeed'),
-    labelOpacity:   this.config.get('labelOpacity'),
-    randomizeTape:  this.config.get('randomizeTape') || false,
+    enabled:          this.config.get('enabled'),
+    animationSpeed:   this.config.get('animationSpeed'),
+    labelOpacity:     this.config.get('labelOpacity'),
+    randomizeTape:    this.config.get('randomizeTape') || false,
+    keepScreenAwake:  this.config.get('keepScreenAwake') !== false,
   };
   uiconf.sections.forEach(section => {
     (section.content || []).forEach(field => {
@@ -147,8 +162,8 @@ MixTape.prototype._populateFontSelection = function (uiconf) {
 };
 
 MixTape.prototype._populateTapeOptions = function (uiconf) {
-  const tapes     = this._registry.listTapes();
-  const savedTape = this.config.get('activeTape');
+  const tapes      = this._registry.listTapes();
+  const savedTape  = this.config.get('activeTape');
   const activeTape = (savedTape && tapes.some(t => t.id === savedTape))
     ? savedTape
     : (tapes[0] ? tapes[0].id : '');
@@ -156,18 +171,25 @@ MixTape.prototype._populateTapeOptions = function (uiconf) {
   const tapeSection = uiconf.sections.find(s => s.id === 'section_tape');
   if (!tapeSection) return;
 
-  const activeSelect = tapeSection.content.find(c => c.id === 'activeTape');
-  if (activeSelect) {
-    activeSelect.options = tapes.map(t => ({ value: t.id, label: t.name }));
-    // Volumio3 select: value must be the full option object {value, label}
-    const activeTapeObj = tapes.find(t => t.id === activeTape);
-    activeSelect.value = activeTapeObj
-      ? { value: activeTapeObj.id, label: activeTapeObj.name }
-      : (tapes[0] ? { value: tapes[0].id, label: tapes[0].name } : { value: '', label: '' });
-  }
+  this._buildTapeSelectField(tapeSection, tapes, activeTape);
+  this._buildTapePoolSwitches(tapeSection, tapes);
+  this._updateSaveButtonData(tapeSection, tapes);
+};
 
+MixTape.prototype._buildTapeSelectField = function (tapeSection, tapes, activeTape) {
+  const activeSelect = tapeSection.content.find(c => c.id === 'activeTape');
+  if (!activeSelect) return;
+  activeSelect.options = tapes.map(t => ({ value: t.id, label: t.name }));
+  // Volumio3 select: value must be the full option object {value, label}
+  const activeTapeObj = tapes.find(t => t.id === activeTape);
+  activeSelect.value = activeTapeObj
+    ? { value: activeTapeObj.id, label: activeTapeObj.name }
+    : (tapes[0] ? { value: tapes[0].id, label: tapes[0].name } : { value: '', label: '' });
+};
+
+MixTape.prototype._buildTapePoolSwitches = function (tapeSection, tapes) {
   // checkboxGroup is not supported by Volumio3's UIConfig renderer.
-  // Inject one switch per tape (id prefix: tapePool__) at end of content.
+  // One switch per tape (id prefix: tapePool__) injected at end of content.
   tapeSection.content = tapeSection.content.filter(c => !c.id.startsWith('tapePool__'));
   tapes.forEach(t => {
     const v = this.config.get('pool_' + t.id);
@@ -178,14 +200,13 @@ MixTape.prototype._populateTapeOptions = function (uiconf) {
       value:   v === true || v === 'true',
     });
   });
+};
 
-  // Add dynamic tapePool__ IDs to saveButton.data so Volumio3 sends them
-  if (tapeSection.saveButton) {
-    tapeSection.saveButton.data = tapeSection.saveButton.data
-      .filter(id => !id.startsWith('tapePool__'))
-      .concat(tapes.map(t => 'tapePool__' + t.id));
-  }
-
+MixTape.prototype._updateSaveButtonData = function (tapeSection, tapes) {
+  if (!tapeSection.saveButton) return;
+  tapeSection.saveButton.data = tapeSection.saveButton.data
+    .filter(id => !id.startsWith('tapePool__'))
+    .concat(tapes.map(t => 'tapePool__' + t.id));
 };
 
 MixTape.prototype.getConfigurationFiles = function () {
@@ -202,21 +223,25 @@ MixTape.prototype.saveOptions = function (rawData) {
 
   try {
     const numFields  = ['animationSpeed', 'labelOpacity'];
-    const boolFields = ['enabled', 'randomizeTape'];
+    const boolFields = ['enabled', 'randomizeTape', 'keepScreenAwake'];
     const strFields  = ['activeTape', 'fontFamily'];
 
     boolFields.forEach(k => { if (data[k] !== undefined) this.config.set(k, val(data[k]) === true || val(data[k]) === 'true'); });
     numFields.forEach(k  => { if (data[k] !== undefined) this.config.set(k, parseFloat(val(data[k]))); });
     strFields.forEach(k  => { if (data[k] !== undefined) this.config.set(k, val(data[k])); });
 
-    // Store each tape's pool membership as its own boolean key (pool_{id})
-    // — same pattern as enabled/randomizeTape, avoids v-conf array/string issues
+    // Pool membership stored as individual booleans (pool_{id}) — same pattern as
+    // enabled/randomizeTape, avoids v-conf array/string round-trip issues.
     Object.keys(data).forEach(k => {
       if (k.startsWith('tapePool__')) {
         const id = k.slice('tapePool__'.length);
         this.config.set('pool_' + id, val(data[k]) === true || val(data[k]) === 'true');
       }
     });
+
+    if (data.keepScreenAwake !== undefined) {
+      this._applyScreenWake(this.config.get('keepScreenAwake'));
+    }
 
     this.logger.info('[MixTape] saved — randomizeTape=' + this.config.get('randomizeTape') + ' activeTape=' + this.config.get('activeTape'));
     this.commandRouter.pushToastMessage('success', PLUGIN_NAME, 'Settings saved.');
@@ -243,7 +268,7 @@ MixTape.prototype._buildConfig = function () {
     randomizeTape:  this.config.get('randomizeTape') || false,
     tapePool:       allTapes.filter(t => { const v = this.config.get('pool_' + t.id); return v === true || v === 'true'; }).map(t => t.id),
     availableTapes: allTapes,
-    staticBase:     'http://' + require('os').hostname() + '.local:' + STATIC_PORT,
+    staticBase:     'http://' + HOSTNAME + '.local:' + STATIC_PORT,
   };
 };
 
@@ -264,8 +289,6 @@ MixTape.prototype._setContext = function (ctx) {
   this.config.set('contextLine3', ctx.line3 || '');
 };
 
-// ------------------------------------------------------------------ kiosk
-
 MixTape.prototype._kioskRedirect = function () {
   const backupDir = path.dirname(KIOSK_BACKUP);
   if (!fs.existsSync(backupDir)) {
@@ -282,6 +305,8 @@ MixTape.prototype._kioskRedirect = function () {
     this.logger.info('[MixTape] kiosk redirected → port ' + STATIC_PORT);
     this._restartKioskIfActive();
   }
+
+  this._applyScreenWake(this.config.get('keepScreenAwake') !== false);
 };
 
 MixTape.prototype._kioskRestore = function () {
@@ -295,10 +320,32 @@ MixTape.prototype._kioskRestore = function () {
       this.logger.info('[MixTape] kiosk script restored via sed (no backup found)');
     }
   }
+  this._applyScreenWake(false);
   this._restartKioskIfActive();
 };
 
+MixTape.prototype._applyScreenWake = function (keepAwake) {
+  // xset runs as the current user — no sudo needed.
+  // DISPLAY must be set explicitly because the plugin process inherits no X session.
+  const env = Object.assign({}, process.env, { DISPLAY: ':0' });
+  const run = function (args) {
+    try { execFileSync('xset', args, { env: env }); } catch (_) {}
+  };
+  if (keepAwake) {
+    run(['s', 'off']);
+    run(['-dpms']);
+    run(['s', 'noblank']);
+    this.logger.info('[MixTape] display sleep disabled');
+  } else {
+    run(['s', 'on']);
+    run(['+dpms']);
+    run(['s', 'blank']);
+    this.logger.info('[MixTape] display sleep restored');
+  }
+};
+
 MixTape.prototype._sudoSed = function (from, to) {
+  // sed -i modifies in place; execFileSync avoids shell injection.
   sudoExec(['/bin/sed', '-i', 's|' + from + '|' + to + '|g', KIOSK_SCRIPT]);
 };
 
